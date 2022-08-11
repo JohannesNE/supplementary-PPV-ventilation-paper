@@ -43,7 +43,10 @@ theme_set(theme_paper())
 
 # Load data
 
-Data is shared in the `data/` folder in the code repository (link in paper). 
+Data is shared in the `data/` folder in the code repository:
+
+<https://github.com/JohannesNE/supplementary-PPV-ventilation-paper>
+
 A codebook is available in the same folder.
 
 ```{r, message=FALSE}
