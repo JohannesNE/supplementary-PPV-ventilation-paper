@@ -1,0 +1,12 @@
+.Rproj.user
+.Rhistory
+.RData
+.Ruserdata
+
+*.log
+*.html
+
+# temp models
+temp_model_fits
+
+# Temp output

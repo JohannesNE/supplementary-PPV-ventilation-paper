@@ -1,0 +1,417 @@
+---
+title: "PPV Bland-Altman analysis"
+author: "Johannes Enevoldsen"
+output:
+  bookdown::pdf_document2:
+    extra_dependencies: ["underscore", "float"]
+    toc: no
+    dev: cairo_pdf
+    latex_engine: xelatex
+    keep_tex: no
+# toc-title: "Contents"
+fontsize: 11pt
+linkcolor: NavyBlue
+monofont: FreeMono
+monofontoptions: 'Scale=0.8'
+mainfontoptions: 'Linestretch=4'
+---
+
+This document contains analysis code for the Bland-Altman analysis of PPV~GAM~ vs PPV~Classic~.
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE)
+```
+
+```{r packages}
+library(tidyverse)
+library(patchwork)
+library(ggh4x)
+```
+
+```{r include=FALSE}
+
+source("plot_settings.R")
+theme_set(theme_paper())
+```
+
+```{r}
+PPV_df <- read_csv("data/vent_setting_study-ppv.csv") |> 
+  mutate(
+    id_f = factor(id),
+    #vent_resp_len = 60 / vent_RR,
+    vent_rel_vt_f = factor(vent_rel_vt, levels = c(10, 8, 6, 4)),
+    vent_RR_f = factor(vent_RR, levels = c(10, 17, 24, 31)),
+    vent_setting = interaction(vent_rel_vt, vent_RR, drop = TRUE)
+  ) |> 
+  drop_na(PPV_gam)
+```
+
+Calculate difference between 1010 and the rest.
+
+```{r}
+
+PPV_1010 <- filter(PPV_df, vent_RR == 10, vent_rel_vt == 10) |>
+  select(id, PPV_gam, PPV_classic)
+
+PPV_df_1010_all <- PPV_df |>
+  left_join(PPV_1010, by = "id", suffix = c("", "_1010")) |> 
+  group_by(id_f) |> 
+  mutate(vent_dist = max(vent_setting_order) - vent_setting_order) |> 
+  ungroup() |> 
+  mutate(D_PPV_gam = PPV_gam - PPV_gam_1010,
+         mean_PPV_gam = (PPV_gam_1010 + PPV_gam) / 2)
+
+PPV_df_1010 <- PPV_df_1010_all |>
+  filter(!(vent_RR == 10 & vent_rel_vt == 10)) 
+  
+
+PPV_vent_setting_all <- PPV_df_1010_all |> 
+  group_by(vent_RR, vent_rel_vt) |>
+  nest() |> 
+  arrange(vent_RR, vent_rel_vt)
+
+PPV_vent_setting <- PPV_vent_setting_all |> 
+  filter(!(vent_RR == 10 & vent_rel_vt == 10))
+```
+
+# Plot alternative PPV vs PPV at VT=10, RR=10
+
+```{r}
+design_no1010 <- "
+  BCDE
+  FGHI
+  J###
+"
+
+make_vent_facet_plot <- function(data, mapping = aes(), 
+                                 design, remove_labels = "none") {
+  
+    ggplot(data, mapping = mapping) +
+    facet_manual(vars("VT [ml kg⁻¹]" = fct_rev(factor(vent_rel_vt)), 
+                      "RR [min⁻¹]" = vent_RR),
+                 design = design, labeller = label_both,
+                 axes = "all", remove_labels = remove_labels
+    ) +
+    theme_paper() +
+    theme(axis.title.x = element_text(hjust = 0))
+}
+
+PPV_cor_1010 <- PPV_df_1010 |> 
+  group_by(vent_RR, vent_rel_vt) |> 
+  summarise(cor = cor(PPV_gam, PPV_gam_1010, use = 'complete.obs'), 
+            .groups = "drop")
+
+ppv_plot <- make_vent_facet_plot(PPV_df_1010, aes(PPV_gam, PPV_gam_1010), 
+                                 design = design_no1010) +
+  geom_abline(slope = 1, intercept = 0, linetype = 2, color = "grey50") +
+  geom_abline(aes(slope = 10/vent_rel_vt, intercept = 0), 
+              linetype = 1, color = "grey50",
+              data = ~filter(.x, id == 1)) +
+  #geom_point(size = 0.7, color = "#999999", data = ~select(.x, -vent_RR, - vent_rel_vt)) +
+  geom_point(size = 0.7) +
+  #stat_smooth(method = "lm", formula = y ~ 1 + x,
+  #            se = FALSE, color = accent_color) +
+  labs(
+    x = "PPV [%] with ventilation as specified above each panel",
+    y = 'PPV [%] with VT: 10 ml kg⁻¹, RR: 10 min⁻¹' 
+    ) + 
+  coord_fixed() +
+  scale_x_continuous(limits=c(0, NA)) +
+  scale_y_continuous(limits=c(0, NA)) +
+  geom_label(data=PPV_cor_1010, aes(label=sprintf("R² = %.2f", cor^2), color = NA),
+           x=15, y=0, hjust = 1, vjust = 0, show.legend = FALSE, size = 2.5, 
+           color = 'grey30', label.size = 0) 
+
+
+save_plot("extra_PPV_gam_1010", ppv_plot, width = 16, height = 12, scale = 1) 
+```
+
+# Bland-Altman analysis
+
+## Bland-Altman analysis functions
+
+```{r}
+calc_ba_stat <- function(data, i) {
+  avg <- mean(data[i])
+  std.dev <- sd(data[i])
+  
+  ul <- avg + 1.96 * std.dev
+  ll <- avg - 1.96 * std.dev
+  
+  c("bias" = avg, "loa.ll" = ll, "loa.ul" = ul, "std.dev" = std.dev)
+}
+
+calc_bootstrapped_ba_stats <- function(data) {
+  b <- boot::boot(data, calc_ba_stat, R = 4000)
+  est_df <- broom::tidy(b, conf.int = TRUE, conf.level = 0.95, conf.method = "bca")
+  est_df |> 
+    rename(est = statistic) |> 
+    select(-c(bias, std.error)) |> 
+    # Pivot into one row
+    pivot_wider(names_from = term, values_from = c(est, conf.low, conf.high))
+}
+```
+
+```{r}
+geom_est_ci <- function(var, label = "", xmax, ci_text = TRUE, text_vjust = 0.5) {
+  est <- paste0("est_", var)
+  conf.low <- paste0("conf.low_", var)
+  conf.high <- paste0("conf.high_", var)
+  
+  list(
+    geom_rect(aes(
+      xmin = 0, xmax = xmax,
+      ymin = .data[[conf.low]], 
+      ymax = .data[[conf.high]]
+      ),
+      fill = "#aaaaaa", alpha = 0.5
+    ),
+    geom_segment(aes(y = .data[[est]],
+                     yend = .data[[est]],
+                     x = 0, xend = xmax), linetype = 2),
+    if (ci_text) {
+      geom_text(
+        aes(
+          label = sprintf("%s: %+.2f \n[%+.2f; %+.2f]",
+                          label,
+                          .data[[est]], .data[[conf.low]], .data[[conf.high]]),
+          x = xmax + 0.5,
+          y = .data[[est]]
+        ),
+        size = 2.5,
+        hjust = 0,
+        vjust = text_vjust,
+        lineheight = 1
+      )
+    } else {
+      geom_text(aes(label = sprintf("%s: %+.2f", 
+                              label, 
+                              .data[[est]]),
+                   x = xmax+0.5, y = .data[[est]]),
+              size = 2.1, hjust = 0, vjust = 0.5, lineheight = 1
+              )
+    }
+    
+  )
+}
+```
+
+## Plot Bland-Altman analysis PPV~GAM~ vs PPV~Classic~
+
+```{r}
+PPV_df_BA_gam_vs_classic <- PPV_df |> 
+  mutate(D_PPV = PPV_gam - PPV_classic,
+         mean_PPV = (PPV_gam + PPV_classic) / 2) 
+
+set.seed(1)  
+BA_stats_gam_vs_classic <- PPV_df_BA_gam_vs_classic |>
+  group_by(vent_rel_vt, vent_RR) |> 
+  nest() |> 
+  mutate(BA = map(data, ~calc_bootstrapped_ba_stats(.x$D_PPV))) |> 
+  unnest(BA)
+
+
+# Select only 10,10 data
+BA_stats_gam_vs_classic_1010 <- BA_stats_gam_vs_classic |>  
+  filter(vent_rel_vt == 10, vent_RR == 10)
+
+PPV_df_BA_gam_vs_classic_1010 <- PPV_df_BA_gam_vs_classic |>  
+  filter(vent_rel_vt == 10, vent_RR == 10)
+
+max_x_val <- max(PPV_df_BA_gam_vs_classic_1010$mean_PPV)
+
+PPV_gam_vs_classic_scatter_plot1010 <- 
+  PPV_df |> 
+  filter(vent_rel_vt == 10, vent_RR == 10) |> 
+  ggplot(aes(PPV_classic, PPV_gam))+
+  geom_abline(intercept = 0, slope = 1, color = "#888888") +
+  geom_point(size = 0.7) +
+  coord_fixed() +
+  labs(x = "PPV<sub>Classic</sub> [%]",
+       y = "PPV<sub>GAM</sub> [%]") +
+  scale_x_continuous(limits=c(0, NA), expand = expansion(add = c(0,2))) +
+  scale_y_continuous(limits=c(0, NA), expand = expansion(add = c(0,2))) +
+  theme(axis.title.x = ggtext::element_markdown(hjust = 0.5),
+        axis.title.y = ggtext::element_markdown(hjust = 0.5),
+        plot.tag.position = c(0, 1.1))
+
+PPV_gam_vs_classic_ba_plot1010 <- ggplot(BA_stats_gam_vs_classic_1010) + 
+  annotate("rect", xmin = max_x_val, xmax = Inf,
+           ymin = -Inf, ymax = Inf, fill = "white", color = NA) +
+  geom_est_ci("bias", label = "Bias", xmax = max_x_val, text_vjust = 0.5) +
+  geom_est_ci("loa.ll", label = "LoA", xmax = max_x_val, text_vjust = 0.8) +
+  geom_est_ci("loa.ul", label = "LoA", xmax = max_x_val, text_vjust = 0.2) +
+  annotate("segment", y = 0, yend = 0,
+           x = -Inf, xend = max_x_val, color = "#555555") +
+  scale_x_continuous(breaks = seq(0, 25, by = 5), expand = expansion(add = c(0,7))) +
+  stat_smooth(aes(mean_PPV, D_PPV), method = "lm", formula = y ~ 1 + x,
+              size = 0.5,
+              se = TRUE, color = accent_color, fill = alpha(accent_color, 0.3), 
+              data = PPV_df_BA_gam_vs_classic_1010) +
+  geom_point(aes(mean_PPV, D_PPV), size = 0.7, color = "#222222", 
+             data = PPV_df_BA_gam_vs_classic_1010) +
+  coord_fixed(clip = "off") +
+  labs(x = "(PPV<sub>GAM</sub> + PPV<sub>Classic</sub>) / 2",
+       y = "PPV<sub>GAM</sub> - PPV<sub>Classic</sub>") + 
+  theme(axis.title.x = ggtext::element_markdown(hjust = 0.5),
+        axis.title.y = ggtext::element_markdown(hjust = 1),
+        plot.tag.position = c(0, 1.1)) 
+
+PPV_gam_vs_classic_plot_1010 <- PPV_gam_vs_classic_scatter_plot1010 + 
+  PPV_gam_vs_classic_ba_plot1010 +
+  plot_annotation(tag_levels = "a")
+
+save_plot("extra_PPV_gam_vs_classic_1010", PPV_gam_vs_classic_plot_1010, 
+          width = 12, height = 4, scale = 1)
+```
+
+Compare PPV~GAM~ and PPV~Classic~ for all settings.
+
+```{r}
+design_all <- "
+  A###
+  BCDE
+  FGHI
+  J###
+"
+
+max_x_val <- max(PPV_df_BA_gam_vs_classic$mean_PPV)
+
+ppv_gam_vs_classic_ba_plot <- make_vent_facet_plot(BA_stats_gam_vs_classic, 
+                                                   design = design_all) +
+  # Rect behind labels
+  annotate("rect", xmin = max_x_val, xmax = Inf,
+           ymin = -Inf, ymax = Inf, fill = "white", color = NA) +
+  geom_est_ci("bias", label = "Bias", xmax = max_x_val, text_vjust = 0.5) +
+  geom_est_ci("loa.ll", label = "LoA", xmax = max_x_val, text_vjust = 1) +
+  geom_est_ci("loa.ul", label = "LoA", xmax = max_x_val, text_vjust = 0) +
+  annotate("segment", y = 0, yend = 0,
+           x = -Inf, xend = max_x_val, color = "#555555") +
+  scale_x_continuous(breaks = seq(0, 25, by = 5), expand = expansion(add = c(0,7))) +
+  scale_y_continuous(breaks = seq(-15, 5, by = 5), expand = expansion(add = c(1,0))) +
+  stat_smooth(aes(mean_PPV, D_PPV), method = "lm", formula = y ~ 1 + x,
+              size = 0.5,
+              se = TRUE, color = accent_color, fill = alpha(accent_color, 0.3), 
+              data = PPV_df_BA_gam_vs_classic) +
+  geom_point(aes(mean_PPV, D_PPV), size = 0.7, color = "#222222", 
+             data = PPV_df_BA_gam_vs_classic) +
+  coord_fixed(clip = "off") +
+  labs(x = "(PPV<sub>GAM</sub> + PPV<sub>Classic</sub>) / 2",
+       y = "PPV<sub>GAM</sub> - PPV<sub>Classic</sub>") +
+  theme(axis.title.x = ggtext::element_markdown(hjust = 0.05),
+        axis.title.y = ggtext::element_markdown(hjust = 0.5))
+
+save_plot("suppl_PPV_BA_gam_vs_classic", ppv_gam_vs_classic_ba_plot, 
+          width = 18, height = 12, scale = 1.5)
+```
+
+# Plot PPV by Respiratory rate / Heart rate
+
+```{r}
+PPV_hr_rr_df <- PPV_df_BA_gam_vs_classic |> 
+  filter(vent_rel_vt %in% c(6, 8)) 
+
+hr_rr_common_layers <- list(
+  geom_point(aes(color=fct_rev(vent_RR_f), shape=vent_rel_vt_f), size = 1),
+  geom_vline(xintercept = 3.6, linetype = 2, color = "#888888"),
+  labs(x = "",
+       color = "Respiratory rate [min⁻¹]",
+       shape = "Tidal volume [ml kg⁻¹]"),
+  coord_cartesian(clip = "off"),
+  scale_shape_manual(values = c(16,1, 2, 3)),
+  #scale_color_brewer(palette = "Set2"), # use default color
+  scale_x_continuous(breaks = c(2.5, 3.6, 5, 7.5, 10)),
+  theme(
+    axis.title.y = ggtext::element_markdown(),
+    legend.direction = "horizontal",
+    legend.box = "vertical",
+    plot.tag.position = c(0, 1.1)
+  )
+)
+
+
+classic_plot <- PPV_hr_rr_df |> 
+  ggplot(aes(hr_rr_ratio, PPV_classic)) +
+  hr_rr_common_layers +
+  labs(y = "PPV<sub>Classic</sub> [%]")
+  
+
+gam_plot <- PPV_hr_rr_df |> 
+  ggplot(aes(hr_rr_ratio, PPV_gam)) +
+  hr_rr_common_layers +
+  labs(y = "PPV<sub>GAM</sub> [%]")
+
+diff_plot <- PPV_hr_rr_df |> 
+  ggplot(aes(hr_rr_ratio, D_PPV)) +
+  geom_hline(yintercept = 0, color = "#222222", size = 0.4) +
+  hr_rr_common_layers +
+  labs(y = "PPV<sub>GAM</sub> - PPV<sub>Classic</sub>",
+       x = "Heart rate / respiratory rate\n[beats / breath]")
+
+comb_gam_classic_plot <- (classic_plot + gam_plot + diff_plot) + 
+  plot_layout(ncol = 1, guides = "collect") +
+  plot_annotation(tag_levels = "a",
+                  theme = theme(legend.position = "bottom",
+                                legend.box = "vertical",
+                                #legend.box.just = "left",
+                                legend.spacing = unit(-0.8, "lines")))
+
+save_plot("fig4_heart_rate_resp_rate", comb_gam_classic_plot, 
+          width = 10, height = 12, scale = 1)
+```
+
+
+# Table of Bland-Altman statistics for all settings
+
+```{r}
+BA_stats_gam_vs_classic |> 
+  select(-data) |> 
+  pivot_longer(-starts_with("vent_"), names_sep = "_", names_to = c(".value", "name")) |> 
+  mutate(value = sprintf("%.2f [%.2f; %.2f]", est, conf.low, conf.high)) |> 
+  select(starts_with("vent_"), name, value) |> 
+  pivot_wider(names_from = name, values_from = value) |> 
+  knitr::kable(digits = 2, booktabs=TRUE) |> 
+  kableExtra::kable_styling(latex_options=c("scale_down", "HOLD_position"))
+```
+
+
+# Difference between PPV~GAM~ and PPV~Classic~ for high and low HR/RR ratio
+
+```{r}
+BA_hr_rr_PPV <- PPV_hr_rr_df |> 
+  mutate(hr_rr_group = cut(hr_rr_ratio, breaks = c(0,3.6,Inf), 
+                           include.lowest = TRUE, right = FALSE)) |> 
+  group_by(hr_rr_group) |> 
+  nest() |> 
+  mutate(BA = map(data, ~calc_bootstrapped_ba_stats(.x$D_PPV))) |> 
+  unnest(BA)
+
+BA_hr_rr_PPV |> 
+  select(hr_rr_group, 
+         est_bias, conf.low_bias, conf.high_bias,
+         est_loa.ll, conf.low_loa.ll, conf.high_loa.ll,
+         est_loa.ul, conf.low_loa.ul, conf.high_loa.ul
+         ) |> 
+  pivot_longer(-hr_rr_group, names_sep = "_", names_to = c(".value", "name")) |> 
+  mutate(value = sprintf("%.2f [%.2f; %.2f]", est, conf.low, conf.high)) |> 
+  select(hr_rr_group, name, value) |> 
+  pivot_wider(names_from = name, values_from = value) |> 
+  knitr::kable(digits = 2, booktabs=TRUE) |> 
+  kableExtra::kable_styling(latex_options=c("scale_down", "HOLD_position"))
+```
+
+
+High HR/RR
+
+```{r}
+t.test(PPV_hr_rr_df$D_PPV[PPV_hr_rr_df$hr_rr_ratio >= 3.6])
+```
+
+Low HR/RR
+
+```{r}
+t.test(PPV_hr_rr_df$D_PPV[PPV_hr_rr_df$hr_rr_ratio < 3.6])
+```
+
+
+

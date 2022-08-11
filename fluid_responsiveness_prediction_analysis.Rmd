@@ -1,0 +1,271 @@
+---
+title: "Fluid responsiveness prediction"
+author: "Johannes Enevoldsen"
+output:
+  bookdown::pdf_document2:
+    extra_dependencies: ["underscore", "float"]
+    toc: no
+    dev: cairo_pdf
+    latex_engine: xelatex
+    keep_tex: no
+# toc-title: "Contents"
+fontsize: 11pt
+linkcolor: NavyBlue
+monofont: FreeMono
+monofontoptions: 'Scale=0.8'
+mainfontoptions: 'Linestretch=4'
+---
+
+This document contains analysis code for the receiver operator characteristic (ROC) analysis of fluid responsiveness prediction.
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE)
+```
+
+
+```{r packages, message=FALSE}
+library(tidyverse)
+library(pROC)
+library(patchwork)
+library(ggh4x) 
+
+source("plot_settings.R")
+
+theme_set(theme_paper())
+```
+
+# Load data
+
+```{r, message=FALSE}
+PPV_df <- read_csv("data/vent_setting_study-ppv.csv")
+fluid_df <- read_csv("data/vent_setting_study-fluid_response.csv")
+
+PPV_fluid <- 
+  left_join(
+    PPV_df,
+    fluid_df,
+    by = "id"
+  ) |> 
+  drop_na(PPV_gam, SV_rel_fluid_response) |> 
+  mutate(SV_rel_fluid_response = SV_rel_fluid_response * 100,
+         SV_fluid_responder = SV_rel_fluid_response > 10)
+
+# Check that number of complete observations is as expected.
+stopifnot(nrow(PPV_fluid) == 489) 
+```
+
+# ROC analysis
+
+```{r}
+
+get_threshold_ci <- function(roc) {
+  res <- ci.thresholds(roc, thresholds = "best") |> 
+    as.data.frame() |> 
+    rownames_to_column(var = "threshold")
+  
+  names(res) <- str_replace_all(names(res), c(".2.5." = "_lwr", 
+                                              ".50." = "_est", 
+                                              ".97.5." = "_upr"))
+    
+  res |> 
+    arrange(desc(specificity_est)) |> 
+    head(1) # If more than one "best", take the one with highest specificity.
+}
+
+roc_results <- PPV_fluid |> 
+  group_by(vent_rel_vt, vent_RR) |> 
+  summarise(gam_roc = list(roc(SV_fluid_responder ~ PPV_gam)),
+            classic_roc = list(roc(SV_fluid_responder ~ PPV_classic)),
+            n_PPV_gam = sum(!is.na(PPV_gam)),
+            n_PPV_classic = sum(!is.na(PPV_classic))
+            ) |> 
+  mutate(gam_auc = map(gam_roc, auc),
+         classic_auc = map(classic_roc, auc),
+         across(ends_with("auc"), .fns = ~map(.x, ci.auc, method = "delong")),
+         # ci.auc returns a vector with lwr, est and upr. They are unpacked below.
+         across(ends_with("auc"), .fns = list(
+           "est" = ~map_dbl(.x, `[`, 2),
+           "lwr" = ~map_dbl(.x, `[`, 1),
+           "upr" = ~map_dbl(.x, `[`, 3)
+           )),
+         # Get threshold, spec, sens at maximum Youden index
+         threshold_gam = map(gam_roc, get_threshold_ci), 
+         threshold_classic = map(classic_roc, get_threshold_ci)
+         )
+  
+```
+
+
+```{r}
+# Design for faceted plot
+design <- "
+  A###
+  BCDE
+  FGHI
+  J###
+"
+
+fluid_prediction_common_layers <- list(
+  geom_point(size = 0.6),
+  geom_abline(intercept = 10, slope = 0, color = accent_color, linetype = 2),
+  scale_y_continuous(expand = expansion(add = c(5, 3)),
+                      breaks = seq(-5, 20, by = 5)),
+  labs(y = "ΔSV, change from baseline [%]"),
+  facet_manual(vars("VT [ml kg⁻¹]" = fct_rev(factor(vent_rel_vt)), 
+                    "RR [min⁻¹]" = vent_RR),
+               design = design, labeller = label_both,
+               axes = "all", remove_labels = "none"
+  ),
+  theme(axis.title.x = ggtext::element_markdown(hjust = 0.1))
+)
+
+fluid_prediction_gam <- ggplot(PPV_fluid, aes(PPV_gam, SV_rel_fluid_response)) +
+  geom_label(aes(label = sprintf("AUC = %.2f [%.2f; %.2f]", 
+                                 gam_auc_est, gam_auc_lwr, gam_auc_upr),
+                x = Inf, y = -Inf), 
+            size = 2.5, hjust = 1, vjust = 0,
+            label.size = NA,
+            data = roc_results) +
+  # number of observations
+  geom_label(aes(label = sprintf("n=%d", n_PPV_gam),
+                x = Inf, y = Inf), 
+            size = 2.5, hjust = 1, vjust = 1.5,
+            label.size = NA,
+            data = roc_results) +
+  fluid_prediction_common_layers +
+  labs(x = "PPV<sub>GAM</sub> [%]")
+
+save_plot("fig3_fluid_prediction_gam",fluid_prediction_gam,  width = 16, height = 13)
+```
+
+```{r}
+fluid_prediction_classic <- ggplot(PPV_fluid |> drop_na(PPV_classic), 
+                                   aes(PPV_classic, SV_rel_fluid_response)) +
+  geom_label(aes(label = sprintf("AUC = %.2f [%.2f; %.2f]", 
+                                 classic_auc_est, classic_auc_lwr, classic_auc_upr),
+                x = Inf, y = -Inf), 
+            size = 2.5, hjust = 1, vjust = 0,
+            label.size = NA,
+            data = roc_results) +
+  # number of observations
+  geom_label(aes(label = sprintf("n=%d", n_PPV_classic),
+                x = Inf, y = Inf), 
+            size = 2.5, hjust = 1, vjust = 1.5,
+            label.size = NA,
+            data = roc_results) +
+  fluid_prediction_common_layers +
+  labs(x = "PPV<sub>Classic</sub> [%]")
+
+save_plot("suppl_fluid_prediction_classic",fluid_prediction_classic, 
+          width = 16, height = 13)
+```
+
+# Plot ROC curves
+
+```{r}
+roc_data <- roc_results |> 
+  select(vent_rel_vt, vent_RR, gam_roc, classic_roc) |>
+  pivot_longer(c(gam_roc, classic_roc), 
+               names_to = "ppv_type", 
+               names_pattern = "(.*)_roc",
+               values_to = "roc") |> 
+  mutate(roc_data = map(roc, ~as.data.frame(.x[c("sensitivities",
+                                           "specificities",
+                                           "thresholds")])),
+         ppv_type = str_replace(ppv_type, c("gam", "classic"), c("GAM", "Classic"))) |> 
+  select(ppv_type, vent_rel_vt, vent_RR, roc_data) |> 
+  unnest(roc_data) |> 
+  arrange(ppv_type, vent_rel_vt, vent_RR, desc(specificities), sensitivities)
+
+roc_curves_plot <- ggplot(roc_data, aes(1-specificities, sensitivities, 
+                                        linetype = ppv_type)) +
+  geom_abline(slope = 1, intercept = 0, linetype = 2, color = "grey") +
+  ggtext::geom_richtext(aes(label = sprintf("AUC<sub>GAM</sub> = %.2f [%.2f; %.2f]<br>
+AUC<sub>Classic</sub> = %.2f [%.2f; %.2f]",
+                                           gam_auc_est, gam_auc_lwr, gam_auc_upr,
+                                           classic_auc_est, classic_auc_lwr, classic_auc_upr),
+                x = Inf, y = -Inf), 
+            size = 2.1, hjust = 1, vjust = 0,
+            label.size = NA, inherit.aes = FALSE,
+            data = roc_results) +
+  geom_step() +
+  facet_manual(vars("VT [ml kg⁻¹]" = fct_rev(factor(vent_rel_vt)), "RR [min⁻¹]" = vent_RR),
+               design = design, labeller = label_both,
+               axes = "all", remove_labels = "none"
+  ) +
+  labs(x = "1 - specificity", y = "Sensitivity",
+       linetype = "PPV method") +
+  coord_equal() +
+  theme(axis.title.x = element_text(hjust = 0),
+        legend.position = c(0.3, 0.9))
+
+save_plot("suppl_ROC_curves", roc_curves_plot, width = 18, height = 16)
+```
+
+# Fluid responsiveness prediction table
+
+```{r, out.width="80%"}
+library(gt)
+
+fmt_est_ci <- function(est, lwr, upr) {
+  sprintf("%.2f [%.2f;%.2f]", est, lwr, upr)
+}
+
+roc_table_df <- roc_results |> 
+  ungroup() |> 
+  select(-c(gam_roc, classic_roc, gam_auc, classic_auc, starts_with("n_"))) |> 
+  unnest_wider(c("classic" = threshold_classic, "gam" = threshold_gam), names_sep = "_") |> 
+  arrange(vent_RR, desc(vent_rel_vt)) |> 
+  pivot_longer(cols = matches("(_est|_lwr|_upr)$"), names_pattern = "(.*)_(est|lwr|upr)", 
+               names_to = c("variable", ".value")) |> 
+  mutate(label = fmt_est_ci(est, lwr, upr),.keep = "unused",
+         across(ends_with("threshold"), as.numeric)) |> 
+  pivot_wider(names_from = variable, values_from = label) |> 
+  relocate(vent_rel_vt,
+           vent_RR,
+           gam_threshold, classic_threshold,
+           gam_sensitivity, classic_sensitivity,
+           gam_specificity, classic_specificity,
+           gam_auc, classic_auc
+           )
+  
+
+roc_table <- gt(roc_table_df) |> 
+  cols_label(
+    vent_rel_vt = "Tidal volume [ml kg⁻¹]",
+    vent_RR = "Respiratory rate [min⁻¹]",
+    gam_auc = "AUC",
+    classic_auc = "AUC",
+    gam_threshold = "Optimal threshold",
+    classic_threshold = "Optimal threshold",
+    gam_sensitivity = "Sensitivity",
+    classic_sensitivity = "Sensitivity",
+    gam_specificity = "Specificity",
+    classic_specificity = "Specificity"
+  ) |> 
+  tab_spanner(
+    label = "Classic PPV",
+    columns = starts_with("classic")
+  ) |> 
+  tab_spanner(
+    label = "GAM PPV",
+    columns = starts_with("gam")
+  ) |> 
+  cols_align(align = "right", columns = ends_with("threshold")) |> 
+  fmt_percent(ends_with("threshold"), decimals = 1, scale_values = FALSE) |> 
+  tab_footnote("Threshold with maximum Youden index.",
+               locations = cells_column_labels(ends_with("threshold"))) |> 
+  tab_header(md("Receiver operating characteristic analysis of fluid-responsiveness 
+prediction using pulse pressure variation (PPV). A positive fluid response was a >10% 
+increase in stroke volume from a 250 ml fluid bolus. PPV was calculated using a 
+classic method and derived from a generalized additive model (GAM). 
+Results are presented as *estimate* [95% confidence interval].")) |> 
+  tab_options(table.width = pct(100))
+
+gtsave(roc_table, "tables/roc_table.html")
+pagedown::chrome_print("tables/roc_table.html", wait = 0.1, options = list(scale = 0.9),
+                  output = "tables/roc_table.pdf")
+
+knitr::include_graphics("tables/roc_table.pdf")
+```
+
