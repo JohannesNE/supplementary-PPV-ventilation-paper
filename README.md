@@ -1,3 +1,5 @@
+[![DOI](https://zenodo.org/badge/523692343.svg)](https://zenodo.org/badge/latestdoi/523692343)
+
 # Data and analysis code for the manuscript: The Effects of Respiratory Rate and Tidal Volume on Pulse Pressure Variation in Healthy Lungs–A Generalized Additive Model Approach May Help Overcome Limitations
 
 Data is available in [`data/`](data/).
