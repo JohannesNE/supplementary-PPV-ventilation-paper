@@ -1,6 +1,5 @@
 ---
 title: "Bayesian Mixed-Effects model of Pulse Pressure Variation by Tidal Volume and Respiratory Rate"
-author: "Johannes Enevoldsen"
 output:
   bookdown::pdf_document2:
     extra_dependencies: ["underscore", "float"]

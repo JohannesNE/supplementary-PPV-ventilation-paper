@@ -1,6 +1,5 @@
 ---
 title: "PPV Bland-Altman analysis"
-author: "Johannes Enevoldsen"
 output:
   bookdown::pdf_document2:
     extra_dependencies: ["underscore", "float"]
@@ -14,6 +13,7 @@ linkcolor: NavyBlue
 monofont: FreeMono
 monofontoptions: 'Scale=0.8'
 mainfontoptions: 'Linestretch=4'
+always_allow_html: yes
 ---
 
 This document contains analysis code for the Bland-Altman analysis of PPV~GAM~ vs PPV~Classic~.

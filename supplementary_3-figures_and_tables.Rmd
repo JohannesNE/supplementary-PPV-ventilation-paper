@@ -1,6 +1,5 @@
 ---
 title: "Supplementary figures and tables"
-author: "Johannes Enevoldsen and Simon Tilma Vistisen"
 output:
   bookdown::pdf_document2:
     extra_dependencies: ["underscore", "float"]

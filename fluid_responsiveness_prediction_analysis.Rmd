@@ -1,6 +1,5 @@
 ---
 title: "Fluid responsiveness prediction"
-author: "Johannes Enevoldsen"
 output:
   bookdown::pdf_document2:
     extra_dependencies: ["underscore", "float"]
