@@ -44,7 +44,7 @@ theme_set(theme_paper())
 
 Data is shared in the `data/` folder in the code repository:
 
-<https://github.com/JohannesNE/supplementary-PPV-ventilation-paper>
+<https://doi.org/10.5281/zenodo.6984310>
 
 A codebook is available in the same folder.
 
@@ -113,13 +113,13 @@ The model (m1), fitted with brms, corresponds to the following model in mathemat
 
 \begin{align*}
 &\text{\bfseries [Likelihood]} \\
-PPV_i \sim &StudentT(\mu_i,\sigma_i, \text{df} = 4) \\
+PPV_{strm} \sim &StudentT(\mu_{strm},\sigma_{trm}, \text{df} = 4) \\
 &\text{\bfseries [Linear model of } log(\mu)] \\
-log(\mu_i) = &
-\beta0_{\operatorname{PPVmethod}[i]} + 
-\beta1_{\operatorname{ventVT}[i]\times\operatorname{PPVmethod}[i]} +
-\beta2_{\operatorname{ventRR}[i]\times\operatorname{PPVmethod}[i]} +
-\alpha_{subject[i]} \\
+log(\mu_{strm}) = &
+\beta0_m + 
+\beta1_{tm} +
+\beta2_{rm} +
+\alpha_s \\
 %
 &\text{\bfseries [Addaptive prior for random effect of subject]} \\
 \alpha_s \sim &Normal(0, \sigma_{\alpha}) \\
@@ -132,22 +132,22 @@ log(\mu_i) = &
 \beta0_{m} \sim &Normal(2.3, 1) \\
 &\quad\text{, for PPVmethod m = (gam, classic)} \\
 %
-&\text{\bfseries [Prior for } \beta s]\\
-(\beta1_{t,m},\beta2_{r,m}) \sim &Normal(0, 2) \\
+&\text{\bfseries [Prior for } \beta ] \\
+(\beta1_{tm},\beta2_{rm}) \sim &Normal(0, 2) \\
 &\quad\text{, for ventVT t = (8,6,4); ventRR r = (17,24,31); PPVmethod m = (gam, classic)} \\
 % Sigma model
-&\text{\bfseries [Linear model of } log(\sigma)]\\
-log(\sigma_i) = &
-\gamma0_{\operatorname{PPVmethod}[i]} + 
-\gamma1_{\operatorname{ventVT}[i]\times\operatorname{PPVmethod}[i]} +
-\gamma2_{\operatorname{ventRR}[i]\times\operatorname{PPVmethod}[i]} \\
+&\text{\bfseries [Linear model of } log(\sigma) \text{]}\\
+log(\sigma_{trm}) = &
+\gamma0_{m} + 
+\gamma1_{tm} +
+\gamma2_{rm} \\
 % Sigma prior
-&\text{\bfseries [Prior for } \gamma s \text{]} \\
-(\gamma0_{m},\gamma1_{t,m},\gamma2_{r,m}) \sim &Normal(0, 1.5) \\
+&\text{\bfseries [Prior for } \gamma \text{]} \\
+(\gamma0_{m},\gamma1_{tm},\gamma2_{rm}) \sim &Normal(0, 1.5) \\
 &\quad\text{, for ventVT t = (8,6,4); ventRR r = (17,24,31); PPVmethod m = (gam, classic)}
 \end{align*}
 
-All independent variables are categorical. $PPVmethod$ is one of the categories “GAM” or “Classic”, $ventVT$ is one of the tidal volumes 10, 8, 6 or 4 ml kg^-1^ (10 ml kg^-1^ is the reference), $ventRR$ is one of the respiratory rates 10, 17, 24 or 31 min^-1^ (10 min^-1^ is the reference). The random term ($\alpha_s$) allows a subject specific intercept, reflecting that each subject presents with PPVs in different ranges. 
+All independent variables are categorical. $PPVmethod$, $m$, is one of the categories “GAM” or “Classic”, $ventVT$, $t$, is one of the tidal volumes 10, 8, 6 or 4 ml kg^-1^ (10 ml kg^-1^ is the reference), $ventRR$, $r$, is one of the respiratory rates 10, 17, 24 or 31 min^-1^ (10 min^-1^ is the reference). The random term ($\alpha_s$) allows a subject specific intercept, reflecting that each subject presents with PPVs in different ranges. 
 
 Model 2 (m2) is similar, but instead of separate effects of tidal volume ($ventVT$) and respiratory rate ($ventRR$), the two ventilator settings are combined to $ventSetting$, giving estimates of all 10 applied combinations of tidal volume and respiratory rate.
 
