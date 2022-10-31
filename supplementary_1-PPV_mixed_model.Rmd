@@ -68,23 +68,23 @@ PPV_df <- read_csv("data/vent_setting_study-ppv.csv") |>
 
 # Labels for vent settings
 vent_setting_levels <- c(
-  "10.10" = "VT=10, RR=10",
-  "8.10" = "VT=8, RR=10",
-  "6.10" = "VT=6, RR=10",
-  "4.10" = "VT=4, RR=10",
-  "8.17" = "VT=8, RR=17",
-  "6.17" = "VT=6, RR=17",
-  "8.24" = "VT=8, RR=24",
-  "6.24" = "VT=6, RR=24",
-  "8.31" = "VT=8, RR=31",
-  "6.31" = "VT=6, RR=31"
+  "10.10" = "V<sub>T</sub>=10, RR=10",
+  "8.10" = "V<sub>T</sub>=8, RR=10",
+  "6.10" = "V<sub>T</sub>=6, RR=10",
+  "4.10" = "V<sub>T</sub>=4, RR=10",
+  "8.17" = "V<sub>T</sub>=8, RR=17",
+  "6.17" = "V<sub>T</sub>=6, RR=17",
+  "8.24" = "V<sub>T</sub>=8, RR=24",
+  "6.24" = "V<sub>T</sub>=6, RR=24",
+  "8.31" = "V<sub>T</sub>=8, RR=31",
+  "6.31" = "V<sub>T</sub>=6, RR=31"
 )
 
 vt_levels <- c(
-  "10" = "VT=10",
-  "8" = "VT=8",
-  "6" = "VT=6",
-  "4" = "VT=4"
+  "10" = "V<sub>T</sub>=10",
+  "8" = "V<sub>T</sub>=8",
+  "6" = "V<sub>T</sub>=6",
+  "4" = "V<sub>T</sub>=4"
 )
 
 rr_levels <- c(
@@ -251,7 +251,7 @@ m2: `max(rhat(m2))` = `r max(rhat_m2)`
 # Posterior predictive plots
 
 Below are plots showing the posterior prediction of PPV for all 10 ventilator settings 
-(8.10.gam means VT=8 ml kg^-1^, RR=10 min^-1^ with GAM method). 
+(8.10.gam means V~T~=8 ml kg^-1^, RR=10 min^-1^ with GAM method). 
 The Student t distribution of the response places a (very) small area of the predictive distribution in negative PPV values. 
 Negative PPV values are not possible. 
 We also fitted the models with a lower bound of 0 on the response distribution, eliminating negative predictions. 
@@ -319,7 +319,7 @@ observed_plot <- ggplot(PPV_df_long, aes(label, PPV)) +
   labs(title = "Observed data", x="", y="PPV [%]",
        color = "PPV method",
        tag = "a") +
-  theme(axis.text.x = element_text(hjust = 1, angle = 20),
+  theme(axis.text.x = ggtext::element_markdown(hjust = 1, angle = 20),
         legend.position = c(0.5, 1),
         legend.direction = "horizontal",
         legend.justification = c(0.5,0.5),
@@ -337,7 +337,7 @@ intercept_draws_m1 <- gather_draws(m1, `b_PPV_method(gam|classic)`, regex = TRUE
   mutate(PPV_method = str_remove(.variable, "b_PPV_method") |> 
            factor(levels = c("gam", "classic")),
          intercept = exp(.value),
-         label = "VT=10, RR=10")
+         label = "V<sub>T</sub>=10, RR=10")
 
 intercept_plot_m1 <- ggplot(intercept_draws_m1, aes(label, intercept, color = PPV_method)) +
   stat_pointinterval(point_size = 1, 
@@ -379,8 +379,8 @@ contrast_plot_layers <- list(
 contrast_plot_vt_m1 <- ggplot(contrast_draws_vt_m1, 
                               aes(label, rel_effect, color = PPV_method)) + 
   contrast_plot_layers +
-  labs(title = "Effect of tidal volume (VT) on PPV", 
-       subtitle = "Relative to VT=10 ml kg⁻¹", tag = "c")
+  labs(title = "Effect of tidal volume (V<sub>T</sub>) on PPV", 
+       subtitle = "Relative to V<sub>T</sub>=10 ml kg⁻¹", tag = "c")
   
   
 contrast_draws_rr_m1 <- filter(contrast_draws_m1, setting_type == "vent_RR") |> 
@@ -438,7 +438,7 @@ resid_plot_m1 <-  ggplot(PPV_df_long_resid,
        subtitle = "The horizontal segments are the means of the residuals",
        x="", y="Residual",
        tag = "e") +
-  theme(axis.text.x = element_text(hjust = 1, angle = 20),
+  theme(axis.text.x = ggtext::element_markdown(hjust = 1, angle = 20),
         legend.position = "none")
 
 resid_plot_m1
@@ -489,7 +489,7 @@ sd_plot_m1 <- ggplot(vent_setting_epred_m1, aes(label,
   labs(title = "Residual coefficient of variation [CV = SD(residuals) / E(PPV)]",
        x="", y="CV", color = "PPV method",
        tag = "f") +
-  theme(axis.text.x = element_text(hjust = 1, angle = 20))
+  theme(axis.text.x = ggtext::element_markdown(hjust = 1, angle = 20))
 
 sd_plot_m1
 ```
@@ -516,7 +516,7 @@ m1_plot <- observed_plot +
 save_plot("suppl_m1_plot", m1_plot, width = 18, height = 18, scale = 1)
 ```
 
-# Make table of relative effects for m1 (relative to VT=10 ml kg^-1^, RR=10 min^-1^)
+# Make table of relative effects for m1 (relative to V~T~=10 ml kg^-1^, RR=10 min^-1^)
 
 These are the estimates that are visualized in panel c and d.
 
@@ -553,7 +553,7 @@ vent_setting_epred_m1 |>
 ```
 
 
-# Make figure for m2 - Model that allows interaction of VT and RR effects
+# Make figure for m2 - Model that allows interaction of V~T~ and RR effects
 
 ## Plot ventilation effects
 
@@ -562,7 +562,7 @@ intercept_draws_m2 <- gather_draws(m2, `b_PPV_method(gam|classic)`, regex = TRUE
   mutate(PPV_method = str_remove(.variable, "b_PPV_method") |> 
            factor(levels = c("gam", "classic")),
          intercept = exp(.value),
-         label = "VT=10, RR=10")
+         label = "V<sub>T</sub>=10, RR=10")
 
 intercept_plot_m2 <- intercept_plot_m1 %+% intercept_draws_m2
 
@@ -586,13 +586,13 @@ contrast_plot_m2 <- ggplot(contrast_draws_m2,
                      position = position_dodge(width = 0.4),
                      .width = 0.95) +
   labs(y = "Relative effect", x = "",
-       title = "Effect of tidal volume (VT) and respiratory rate (RR) on PPV", 
-       subtitle = "Relative to VT=10 ml kg⁻¹ and RR = 10 min⁻¹", tag = "c") + 
+       title = "Effect of tidal volume (V<sub>T</sub>) and respiratory rate (RR) on PPV", 
+       subtitle = "Relative to V<sub>T</sub>=10 ml kg⁻¹ and RR = 10 min⁻¹", tag = "c") + 
   scale_y_continuous(labels = scales::label_percent(accuracy = 1),
                      breaks = seq(0.4, 1, by = 0.2)) +
   coord_cartesian(ylim = c(0.3, 1)) +
   theme(legend.position = "none",
-        axis.text.x = element_text(hjust = 1, angle = 20)) 
+        axis.text.x = ggtext::element_markdown(hjust = 1, angle = 20)) 
   
   
 contrast_plot_m2
@@ -614,7 +614,7 @@ resid_plot_m2 <-  ggplot(PPV_df_long_resid, aes(label, resid_m2)) +
        subtitle = "The horizontal segments are the means of the residuals",
        x="", y="Residual",
        tag = "d") +
-  theme(axis.text.x = element_text(hjust = 1, angle = 20),
+  theme(axis.text.x = ggtext::element_markdown(hjust = 1, angle = 20),
         legend.position = "none")
 
 resid_plot_m2

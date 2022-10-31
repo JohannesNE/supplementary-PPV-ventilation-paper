@@ -13,6 +13,7 @@ theme_paper <- function(..., base_size = 8) {
   theme(
     panel.border = ggplot2::element_blank(),
     axis.text = ggplot2::element_text(color = darkcolor, size = rel(0.9)),
+    axis.text.x = ggtext::element_markdown(color = darkcolor, size = rel(0.9)),
     axis.line = element_line(color = darkcolor),
     axis.ticks = element_line(color = darkcolor),
     panel.grid.minor = ggplot2::element_blank(),
@@ -23,7 +24,8 @@ theme_paper <- function(..., base_size = 8) {
     plot.margin = ggplot2::unit(c(2, 2, 1, 1), "mm"),
     plot.background = element_rect(fill = "white", color = NA),
     #panel.background = element_rect(fill = "white"),
-    plot.subtitle = element_text(size = rel(1.1), hjust = 0),
+    plot.title = ggtext::element_markdown(size = rel(1.3), hjust = 0),
+    plot.subtitle = ggtext::element_markdown(size = rel(1.1), hjust = 0),
     plot.tag.position = c(0, 1),
     plot.tag = element_text(size = rel(1.2), margin = margin(l = 1, unit = "lines"))
   )

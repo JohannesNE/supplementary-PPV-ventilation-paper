@@ -28,7 +28,7 @@ knitr::opts_chunk$set(echo = FALSE)
 # Figure S1
 
 ```{r}
-#| fig.cap = "Scatter plots of the relation between PPV calculated with the classic algorithm (PPV~Classic~) and the stroke volume response (ΔSV) to a 250 ml fluid challenge. Panels are arranged with tidal volumes (VT) in rows and respiratory rates (RR) in columns . One fluid challenge was evaluated for each subject (n = 50), while PPV~Classic~ was calculated for each of the 10 ventilator settings."
+#| fig.cap = "Scatter plots of the relation between PPV calculated with the classic algorithm (PPV~Classic~) and the stroke volume response (ΔSV) to a 250 ml fluid challenge. Panels are arranged with tidal volumes ($V_T$) in rows and respiratory rates (RR) in columns . One fluid challenge was evaluated for each subject (n = 50), while PPV~Classic~ was calculated for each of the 10 ventilator settings."
 knitr::include_graphics("plots/suppl_fluid_prediction_classic.pdf")
 ```
 
@@ -36,7 +36,7 @@ knitr::include_graphics("plots/suppl_fluid_prediction_classic.pdf")
 
 # Figure S2
 
-(ref:fig2) Receiver operating characteristic (ROC) curves for capacity of pulse pressure variation (PPV) to classify fluid responsiveness (stroke volume change > 10%). Panels are arranged with tidal volumes (VT) in rows and respiratory rates (RR) in columns. One fluid challenge was evaluated for each subject (n = 50), while PPV~GAM~ and PPV~Classic~ was calculated for each of the 10 ventilator settings.
+(ref:fig2) Receiver operating characteristic (ROC) curves for capacity of pulse pressure variation (PPV) to classify fluid responsiveness (stroke volume change > 10%). Panels are arranged with tidal volumes (V~T~) in rows and respiratory rates (RR) in columns. One fluid challenge was evaluated for each subject (n = 50), while PPV~GAM~ and PPV~Classic~ was calculated for each of the 10 ventilator settings.
 
 ```{r, out.width = "95%"}
 #| fig.cap = "(ref:fig2)"
@@ -48,7 +48,7 @@ knitr::include_graphics("plots/suppl_ROC_curves.pdf")
 # Figure S3
 
 ```{r}
-#| fig.cap = "Bland-Altman plots showing the relation between PPV~GAM~ and PPV~Classic~. The outer dashed lines represent 95% limits of agreement (LoA). Grey areas are 95% confidence intervals for bias and LoA. The purple lines and areas are linear regression fits with 95% confidence intervals. Panels are arranged with tidal volumes (VT) in rows and respiratory rates (RR) in columns."
+#| fig.cap = "Bland-Altman plots showing the relation between PPV~GAM~ and PPV~Classic~. The outer dashed lines represent 95% limits of agreement (LoA). Grey areas are 95% confidence intervals for bias and LoA. The purple lines and areas are linear regression fits with 95% confidence intervals. Panels are arranged with tidal volumes ($V_T$) in rows and respiratory rates (RR) in columns."
 knitr::include_graphics("plots/suppl_PPV_BA_gam_vs_classic.pdf")
 ```
 
@@ -56,7 +56,7 @@ knitr::include_graphics("plots/suppl_PPV_BA_gam_vs_classic.pdf")
 
 # Figure S4
 
-(ref:fig4) (Extended version of the paper's Fig. 5): Parameter estimates for a Bayesian mixed-effects model, describing the effect of tidal volume (VT) and respiratory rate (RR) on pulse pressure variation (PPV). Parameters are estimated for both PPV derived using a generalized additive model (GAM) and using a classic approach (Classic). Panel **a** presents the observed PPV values (outcomes) using each method (n=507 for both GAM and Classic). Vertical bars are 95% compatibility intervals. Panel **b**, **c** and **d** present parameter estimates. Vertical bars are 95% compatibility intervals. Panel **e** shows model residuals, and panel **f** shows the residual variation relative to the estimated value of PPV.
+(ref:fig4) (Extended version of the paper's Fig. 5): Parameter estimates for a Bayesian mixed-effects model, describing the effect of tidal volume (V~T~) and respiratory rate (RR) on pulse pressure variation (PPV). Parameters are estimated for both PPV derived using a generalized additive model (GAM) and using a classic approach (Classic). Panel **a** presents the observed PPV values (outcomes) using each method (n=507 for both GAM and Classic). Vertical bars are 95% compatibility intervals. Panel **b**, **c** and **d** present parameter estimates. Vertical bars are 95% compatibility intervals. Panel **e** shows model residuals, and panel **f** shows the residual variation relative to the estimated value of PPV.
 
 ```{r, out.width="85%", fig.align='center'}
 #| fig.cap = "(ref:fig4)"

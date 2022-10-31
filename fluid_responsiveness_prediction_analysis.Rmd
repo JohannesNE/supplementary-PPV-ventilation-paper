@@ -110,12 +110,13 @@ fluid_prediction_common_layers <- list(
   scale_y_continuous(expand = expansion(add = c(5, 3)),
                       breaks = seq(-5, 20, by = 5)),
   labs(y = "ΔSV, change from baseline [%]"),
-  facet_manual(vars("VT [ml kg⁻¹]" = fct_rev(factor(vent_rel_vt)), 
+  facet_manual(vars("V<sub>T</sub> [ml kg⁻¹]" = fct_rev(factor(vent_rel_vt)), 
                     "RR [min⁻¹]" = vent_RR),
                design = design, labeller = label_both,
                axes = "all", remove_labels = "none"
   ),
-  theme(axis.title.x = ggtext::element_markdown(hjust = 0.1))
+  theme(axis.title.x = ggtext::element_markdown(hjust = 0.1),
+        strip.text = ggtext::element_markdown())
 )
 
 fluid_prediction_gam <- ggplot(PPV_fluid, aes(PPV_gam, SV_rel_fluid_response)) +
@@ -188,7 +189,7 @@ AUC<sub>Classic</sub> = %.2f [%.2f; %.2f]",
             label.size = NA, inherit.aes = FALSE,
             data = roc_results) +
   geom_step() +
-  facet_manual(vars("VT [ml kg⁻¹]" = fct_rev(factor(vent_rel_vt)), "RR [min⁻¹]" = vent_RR),
+  facet_manual(vars("V<sub>T</sub> [ml kg⁻¹]" = fct_rev(factor(vent_rel_vt)), "RR [min⁻¹]" = vent_RR),
                design = design, labeller = label_both,
                axes = "all", remove_labels = "none"
   ) +
@@ -196,6 +197,7 @@ AUC<sub>Classic</sub> = %.2f [%.2f; %.2f]",
        linetype = "PPV method") +
   coord_equal() +
   theme(axis.title.x = element_text(hjust = 0),
+        strip.text = ggtext::element_markdown(),
         legend.position = c(0.3, 0.9))
 
 save_plot("suppl_ROC_curves", roc_curves_plot, width = 18, height = 16)
