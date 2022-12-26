@@ -1,7 +1,7 @@
 # colors
 darkcolor <-  "#222222"
 
-cat_colors <- c("#005fab", "#00807d", "#762a84", "#ab4c00")
+cat_colors <- c("#003f5c", "#ef5675", "#ffa600", "#7a5195")
 
 accent_color <- cat_colors[3]
 
