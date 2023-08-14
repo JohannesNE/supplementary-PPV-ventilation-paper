@@ -1,7 +1,7 @@
 Serial measurements of pulse pressure variation (PPV) with different 
 ventilator settings. PPV is indicative of a patients response to IV fluids.
 
-Variables in `vent_setting_study-ppv.csv`:
+Variables in `vent_setting_study-vent_protocol.csv`:
  - id: Unique subject id
  - vent_setting_order: The order ventilator settings were applied in for the specific subjects
  - vent_rel_vt: Ventilator setting, relative tidal volume (ml/kg)
@@ -10,7 +10,11 @@ Variables in `vent_setting_study-ppv.csv`:
    - PPV_gam: PPV calculated from a generalized additive model of PP (see https://doi.org/10.1007/s10877-022-00873-7)
    - PPV_classic: PPV calculated as described by De Backer 2009 (https://doi.org/10.1097/ALN.0b013e31819db2a1)
    - PPV_intellivue: PPV exported by the Philips IntelliVue MX550 (not available for all subjects)
- - mean_beat_len: Mean of heat beat length (QRS to QRS) during a ventilator setting
+ - mean_beat_len: Mean of heat beat length (QRS to QRS) during each ventilator setting
+ - CVP: Mean central venous pressure during last 15 sec of each ventilator setting
+ - MAP: Mean arterial pressure during last 15 sec of each ventilator setting
+ - SAP: Mean systolic arterial pressure during last 15 sec of each ventilator setting
+ - DAP: Mean diastolic arterial pressure during last 15 sec of each ventilator setting
  - heart_rate: Mean heart rate during a ventilator setting (60/mean_beat_len)
  - hr_rr_ratio: heart_rate/vent_RR
 
@@ -32,7 +36,19 @@ Variables in `vent_setting_study-fluid_response.csv`:
  - MAP_post_fluid_avg
  - MAP_rel_fluid_response
  - MAP_abs_fluid_response
- - PP_pre_fluid_avg: median pulse pressure (Intellivue)
+ - SAP_pre_fluid_avg: median systolic arterial pressure (Intellivue)
+ - SAP_post_fluid_avg
+ - SAP_rel_fluid_response
+ - SAP_abs_fluid_response
+ - DAP_pre_fluid_avg: median diastolic arterial pressure (Intellivue)
+ - DAP_post_fluid_avg
+ - DAP_rel_fluid_response
+ - DAP_abs_fluid_response
+ - CVP_pre_fluid_avg: median central venous pressure (Intellivue)
+ - CVP_post_fluid_avg
+ - CVP_rel_fluid_response
+ - CVP_abs_fluid_response
+ - PP_pre_fluid_avg: median pulse pressure
  - PP_post_fluid_avg
  - PP_rel_fluid_response
  - PP_abs_fluid_response
