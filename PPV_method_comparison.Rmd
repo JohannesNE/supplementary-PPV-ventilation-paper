@@ -35,7 +35,7 @@ theme_set(theme_paper())
 ```
 
 ```{r}
-PPV_df <- read_csv("data/vent_setting_study-ppv.csv") |> 
+PPV_df <- read_csv("data/vent_setting_study-vent_protocol.csv") |> 
   mutate(
     id_f = factor(id),
     #vent_resp_len = 60 / vent_RR,

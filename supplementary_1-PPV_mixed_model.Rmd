@@ -49,7 +49,7 @@ Data is shared in the `data/` folder in the code repository:
 A codebook is available in the same folder.
 
 ```{r, message=FALSE}
-PPV_df <- read_csv("data/vent_setting_study-ppv.csv") |> 
+PPV_df <- read_csv("data/vent_setting_study-vent_protocol.csv") |> 
   mutate(
     # Create factors for ventilator settings
     id_f = factor(id),

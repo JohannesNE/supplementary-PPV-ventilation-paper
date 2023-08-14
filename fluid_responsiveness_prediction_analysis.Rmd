@@ -36,7 +36,7 @@ theme_set(theme_paper())
 # Load data
 
 ```{r, message=FALSE}
-PPV_df <- read_csv("data/vent_setting_study-ppv.csv")
+PPV_df <- read_csv("data/vent_setting_study-vent_protocol.csv")
 fluid_df <- read_csv("data/vent_setting_study-fluid_response.csv")
 
 PPV_fluid <- 
