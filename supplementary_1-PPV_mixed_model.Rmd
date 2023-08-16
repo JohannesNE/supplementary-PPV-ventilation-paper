@@ -411,7 +411,7 @@ m1_plot_simple <- observed_plot +
               widths = c(1, 3, 3)
               ) 
 
-save_plot("fig5_mix_model_fig", m1_plot_simple, width = 18, height = 11, scale = 1)
+save_plot("fig6_mix_model_fig", m1_plot_simple, width = 18, height = 11, scale = 1)
 
 ```
 

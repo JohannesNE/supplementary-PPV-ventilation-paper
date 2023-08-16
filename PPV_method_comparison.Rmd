@@ -263,7 +263,7 @@ PPV_gam_vs_classic_plot_1010 <- PPV_gam_vs_classic_scatter_plot1010 +
   PPV_gam_vs_classic_ba_plot1010 +
   plot_annotation(tag_levels = "a")
 
-save_plot("extra_PPV_gam_vs_classic_1010", PPV_gam_vs_classic_plot_1010, 
+save_plot("fig4_PPV_gam_vs_classic_1010", PPV_gam_vs_classic_plot_1010, 
           width = 12, height = 4, scale = 1)
 ```
 
@@ -359,7 +359,7 @@ comb_gam_classic_plot <- (classic_plot + gam_plot + diff_plot) +
                                 #legend.box.just = "left",
                                 legend.spacing = unit(-0.8, "lines")))
 
-save_plot("fig4_heart_rate_resp_rate", comb_gam_classic_plot, 
+save_plot("fig5_heart_rate_resp_rate", comb_gam_classic_plot, 
           width = 10, height = 12, scale = 1)
 ```
 
