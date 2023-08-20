@@ -147,7 +147,7 @@ log(\sigma_{trm}) = &
 &\quad\text{, for ventVT t = (8,6,4); ventRR r = (17,24,31); PPVmethod m = (gam, classic)}
 \end{align*}
 
-All independent variables are categorical. $PPVmethod$, $m$, is one of the categories “GAM” or “Classic”, $ventVT$, $t$, is one of the tidal volumes 10, 8, 6 or 4 ml kg^-1^ (10 ml kg^-1^ is the reference), $ventRR$, $r$, is one of the respiratory rates 10, 17, 24 or 31 min^-1^ (10 min^-1^ is the reference). The random term ($\alpha_s$) allows a subject specific intercept, reflecting that each subject presents with PPVs in different ranges. 
+All independent variables are categorical. $PPVmethod$, $m$, is one of the categories “GAM” or “Classic”, $ventVT$, $t$, is one of the tidal volumes 10, 8, 6 or 4 ml kg^-1^ (10 ml kg^-1^ is the reference), $ventRR$, $r$, is one of the respiratory rates 10, 17, 24 or 31 min^-1^ (10 min^-1^ is the reference). We use categorical, rather than continuous, variables for tidal volume and respiratory rate, because we do not want to assume a linear effect of these settings, and because we want these model parameters to be directly interpretable as relative effects (after exponentiation). The random term ($\alpha_s$) allows a subject specific intercept, reflecting that subjects present with PPVs in different ranges. 
 
 Model 2 (m2) is similar, but instead of separate effects of tidal volume ($ventVT$) and respiratory rate ($ventRR$), the two ventilator settings are combined to $ventSetting$, giving estimates of all 10 applied combinations of tidal volume and respiratory rate.
 
